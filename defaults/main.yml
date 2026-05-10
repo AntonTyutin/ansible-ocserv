@@ -16,6 +16,8 @@ ocserv_per_user_config_dir: /etc/ocserv/config-per-user/
 ocserv_default_domain: vpn.example.com
 # Path on the Ansible controller to a CA certificate file to install for client cert auth (optional).
 ocserv_ca_cert_file: ""
+# Optional secondary methods (e.g. certificate). Leave empty unless you install `ocserv_ca_cert_file` and need client certs.
+ocserv_enable_auth: []
 
 # Main ocserv configuration
 ocserv_config:
@@ -24,8 +26,7 @@ ocserv_config:
     - type: plain # pam, plain, certificate, radius
       options:
         passwd: "{{ ocserv_passwd_file }}"
-  # Optional secondary methods (e.g. certificate). Leave empty unless you install `ocserv_ca_cert_file` and need client certs.
-  enable_auth: []
+  enable_auth: "{{ ocserv_enable_auth }}"
 
   # Network settings
   listen_host: 127.0.0.1
