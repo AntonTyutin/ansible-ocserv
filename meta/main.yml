@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: ocserv
+  author: anton.tyutin
+  description: Install and configure OpenConnect VPN server (ocserv) from upstream releases on Ubuntu.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - openconnect
+    - ocserv
+    - vpn
+    - networking
+
+dependencies: []

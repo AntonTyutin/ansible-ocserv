@@ -1,0 +1,84 @@
+---
+# Tasks for updating ocserv when a newer version is available
+
+- name: Add Plucky repository for libllhttp
+  apt_repository:
+    repo: deb https://archive.ubuntu.com/ubuntu plucky universe
+    state: present
+    filename: plucky-libllhttp.list
+
+- name: Add APT pinning for libllhttp from Plucky
+  copy:
+    dest: /etc/apt/preferences.d/libllhttp-plucky.pref
+    content: |
+      Package: *
+      Pin: release n=plucky
+      Pin-Priority: -10
+
+      Package: libllhttp*
+      Pin: release n=plucky
+      Pin-Priority: 990
+
+- name: Ensure build dependencies are installed
+  apt:
+    # https://gitlab.com/openconnect/ocserv/-/blob/master/INSTALL.md#build-dependencies
+    name:
+      # basic build dependencies
+      - build-essential
+      - meson
+      - ninja-build
+      - pkg-config
+      # required
+      - libgnutls28-dev
+      - libev-dev
+      - libreadline-dev
+      - libtasn1-bin
+      # optional
+      - libpam0g-dev
+      - liblz4-dev
+      - libseccomp-dev
+      - libnl-route-3-dev
+      - libkrb5-dev
+      - libradcli-dev
+      - libcurl4-gnutls-dev
+      - libcjose-dev
+      - libjansson-dev
+      - liboath-dev
+      - libprotobuf-c-dev
+      - libtalloc-dev
+      - libllhttp-dev
+      - protobuf-c-compiler
+    state: present
+    update_cache: yes
+
+- name: Create ocserv build directory
+  file:
+    path: "{{ ocserv_build_src_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Download ocserv release tarball
+  get_url:
+    url: "{{ ocserv_tarball_url }}"
+    dest: "{{ ocserv_build_src_dir }}/ocserv-{{ ocserv_latest_version }}.tar.gz"
+    mode: '0644'
+    validate_certs: true
+    timeout: 120
+
+- name: Extract ocserv source
+  unarchive:
+    src: "{{ ocserv_build_src_dir }}/ocserv-{{ ocserv_latest_version }}.tar.gz"
+    dest: "{{ ocserv_build_src_dir }}"
+    remote_src: false
+    creates: "{{ ocserv_build_src_dir }}/ocserv-{{ ocserv_latest_version }}"
+
+# Build and install ocserv
+- name: Run meson build
+  command: meson setup build
+  args:
+    chdir: "{{ ocserv_build_src_dir }}/ocserv-{{ ocserv_latest_version }}"
+
+- name: Install ocserv
+  command: ninja -C build install
+  args:
+    chdir: "{{ ocserv_build_src_dir }}/ocserv-{{ ocserv_latest_version }}"

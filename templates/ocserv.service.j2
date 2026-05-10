@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenConnect VPN Server
+After=network-online.target
+After=dbus.service
+
+[Service]
+Type=simple
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+ExecStart={{ ocserv_bin_path }} --foreground --pid-file {{ ocserv_config.pid_file }} --config {{ ocserv_config.config_file }}
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
