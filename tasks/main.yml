@@ -42,12 +42,12 @@
 - name: Validate ocserv account names
   assert:
     that:
-      - item.name is match('^[a-z_][a-z0-9_-]{0,31}$')
+      - item is match('^[a-z_][a-z0-9_-]{0,31}$')
     fail_msg: >-
-      ocserv username must be a POSIX-like login name ({{ item.name }} is not allowed).
-  loop: "{{ ocserv_users }}"
+      ocserv username must be a POSIX-like login name ({{ item }} is not allowed).
+  loop: "{{ ocserv_users | map(attribute='name') | list }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item }}"
 
 # Include build tasks if build is needed
 - include_tasks: build.yaml
