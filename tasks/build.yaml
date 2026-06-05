@@ -33,6 +33,9 @@
       - libev-dev
       - libreadline-dev
       - libtasn1-bin
+      # implicitly required
+      - gperf
+      - ipcalc-ng
       # optional
       - libpam0g-dev
       - liblz4-dev
@@ -69,7 +72,7 @@
   unarchive:
     src: "{{ ocserv_build_src_dir }}/ocserv-{{ ocserv_latest_version }}.tar.gz"
     dest: "{{ ocserv_build_src_dir }}"
-    remote_src: false
+    remote_src: true
     creates: "{{ ocserv_build_src_dir }}/ocserv-{{ ocserv_latest_version }}"
 
 # Build and install ocserv
