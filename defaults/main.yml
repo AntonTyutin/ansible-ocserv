@@ -10,9 +10,16 @@ ocserv_users: []
   #   password: !vault |
   #         $ANSIBLE_VAULT;1.1;AES256
   #         ...
+  #   ipv4_address: 10.100.10.5   # optional
+  #   routes:                     # optional, per-user system routes
+  #     - 192.168.50.0/24
+  #     - 10.20.0.0/16
 
 ocserv_passwd_file: /etc/ocserv/ocserv.passwd
 ocserv_per_user_config_dir: /etc/ocserv/config-per-user/
+ocserv_user_routes_dir: /etc/ocserv/user-routes/
+ocserv_connect_script: /usr/libexec/ocserv-user-routes-hook.sh
+ocserv_has_user_routes: "{{ ocserv_users | selectattr('routes', 'defined') | selectattr('routes') | list | length > 0 }}"
 ocserv_default_domain: vpn.example.com
 # Path on the Ansible controller to a CA certificate file to install for client cert auth (optional).
 ocserv_ca_cert_file: ""
@@ -93,6 +100,8 @@ ocserv_config:
 
   # User configuration
   config_per_user: "{{ ocserv_per_user_config_dir }}"
+  connect_script: "{{ ocserv_connect_script if ocserv_has_user_routes else '' }}"
+  disconnect_script: "{{ ocserv_connect_script if ocserv_has_user_routes else '' }}"
 
   # Stricter defaults; set true only if you must support legacy AnyConnect / old OpenConnect clients.
   cisco_client_compat: false

@@ -428,8 +428,10 @@ rekey-method = {{ ocserv_config.rekey_method }}
 # STATS_BYTES_OUT, STATS_DURATION that contain a 64-bit counter of the bytes
 # output from the tun device, and the duration of the session in seconds.
 
-#connect-script = /usr/bin/myscript
-#disconnect-script = /usr/bin/myscript
+{% if ocserv_config.connect_script | default('', true) | length > 0 %}
+connect-script = {{ ocserv_config.connect_script }}
+disconnect-script = {{ ocserv_config.disconnect_script | default(ocserv_config.connect_script) }}
+{% endif %}
 
 # This script is to be called when the client's advertised hostname becomes
 # available. It will contain REASON with "host-update" value and the

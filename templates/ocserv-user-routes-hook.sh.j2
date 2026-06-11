@@ -1,0 +1,33 @@
+#!/bin/bash
+# Managed by Ansible — per-user system routes on VPN connect/disconnect.
+set -euo pipefail
+
+ROUTES_FILE="{{ ocserv_user_routes_dir }}/${USERNAME:-}"
+
+if [[ ! -f "$ROUTES_FILE" ]]; then
+  exit 0
+fi
+
+case "${REASON:-}" in
+  connect)
+    if [[ -z "${DEVICE:-}" || -z "${IP_REMOTE:-}" ]]; then
+      echo "DEVICE and IP_REMOTE are required for connect" >&2
+      exit 1
+    fi
+    while IFS= read -r route || [[ -n "$route" ]]; do
+      [[ -n "$route" ]] || continue
+      ip route add "$route" via "$IP_REMOTE" dev "$DEVICE"
+    done < "$ROUTES_FILE"
+    ;;
+  disconnect)
+    if [[ -z "${DEVICE:-}" || -z "${IP_REMOTE:-}" ]]; then
+      exit 0
+    fi
+    while IFS= read -r route || [[ -n "$route" ]]; do
+      [[ -n "$route" ]] || continue
+      ip route delete "$route" via "$IP_REMOTE" dev "$DEVICE" 2>/dev/null || true
+    done < "$ROUTES_FILE"
+    ;;
+esac
+
+exit 0
