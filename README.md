@@ -1,12 +1,12 @@
 # Ansible role: ocserv
 
-Installs [ocserv](https://gitlab.com/openconnect/ocserv) (OpenConnect VPN server): discovers the latest release from GitLab, compiles on target when needed, configures `systemd`, applies TLS and network settings, manages optional per-user static IPv4 pools and per-user system routes (via connect/disconnect hook), and adds UFW forwarding rules for the VPN tunnel devices.
+Installs [ocserv](https://gitlab.com/openconnect/ocserv) (OpenConnect VPN server): discovers the latest release from GitLab, compiles on target when needed, configures `systemd`, applies TLS and network settings, manages optional per-user static IPv4 pools and per-user system routes (via connect/disconnect hook), and adds a UFW route rule allowing forwarding from the VPN address pool to the WAN interface.
 
 ## Requirements
 
 - **Target OS:** Ubuntu — see **Ubuntu-specific parts** below for APT/UFW assumptions.
 - **Ansible:** 2.12+
-- **Collections:** `community.general` (for `ufw`). Install before running playbooks:
+- **Collections:** `community.general` (for `ufw`), `ansible.utils` (for VPN pool CIDR). Install before running playbooks:
 
 ```bash
 ansible-galaxy collection install -r requirements.yml
@@ -22,8 +22,8 @@ The role is written with **Ubuntu Server/Desktop** in mind. Elsewhere (Debian, R
 |------|---------------------|
 | **Galaxy metadata** | `meta/main.yml` lists Ubuntu releases (`jammy`, `noble`) as supported platforms. |
 | **Building ocserv** | `tasks/build.yaml` uses **`apt`** and **`apt_repository`**, pulls packages by Ubuntu naming, and adds the **`plucky`** `universe` line plus APT pinning so **`libllhttp-dev`** can be installed on releases where it is not in the default repos. Paths and pinning are tied to Ubuntu archive layout (`archive.ubuntu.com`). |
-| **Firewall** | Forwarding rules use **`community.general.ufw`** (`tasks/main.yml`). That matches the common Ubuntu setup (`ufw` package); hosts using **nftables**, **firewalld**, **iptables-only**, or cloud SGs must replicate equivalent forwarding rules outside this role. |
-| **`external_interface_ipv4`** | Used only for those **UFW `route`** rules; still useful as documentation of your WAN-facing interface even if you disable UFW elsewhere. |
+| **Firewall** | A single **UFW `route`** rule allows forwarding from the VPN pool (`ocserv_ipv4_pool_cidr`, derived from `ocserv_config.ipv4_network` / `ipv4_netmask`) out via **`external_interface_ipv4`**. Matches the common Ubuntu **`ufw`** setup; hosts using **nftables**, **firewalld**, **iptables-only**, or cloud SGs must replicate equivalent rules outside this role. |
+| **`external_interface_ipv4`** | Outbound interface for the UFW route rule; defaults to `ansible_default_ipv4.interface` or `eth0`. |
 
 Everything else (upstream tarball, **`systemd`** unit, **`ocserv.conf`** template, sysctl **`net.ipv4.ip_forward`**) is broadly **Linux**-oriented, not Ubuntu-exclusive.
 

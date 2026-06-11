@@ -192,13 +192,12 @@
     value: 1
     state: present
 
-- name: Add UFW forwarding rules for each vpns interface
+- name: Allow UFW forwarding from VPN pool to WAN
   community.general.ufw:
     rule: allow
     route: yes
-    interface_in: "{{ item }}"
+    src: "{{ ocserv_ipv4_pool_cidr }}"
     interface_out: "{{ external_interface_ipv4 }}"
-  loop: "{{ range(10) | map('regex_replace', '^', ocserv_config.device) | list }}"
 
 - name: Enable ocserv service
   systemd:
