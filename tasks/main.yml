@@ -128,7 +128,7 @@
   loop_control:
     loop_var: user
   no_log: true
-  when: user.ipv4_network is defined
+  when: user.ipv4_address is defined
   notify: restart ocserv
 
 - name: Ensure kernel ip forwarding is enabled

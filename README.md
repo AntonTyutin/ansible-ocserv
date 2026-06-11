@@ -32,7 +32,7 @@ Everything else (upstream tarball, **`systemd`** unit, **`ocserv.conf`** templat
 | Variable | Description |
 |----------|-------------|
 | `external_interface_ipv4` | Interface name for outbound traffic (UFW `route` rules). Defaults to `ansible_default_ipv4.interface` or `eth0`. |
-| `ocserv_users` | List of users; optional `password` (vault recommended), optional `ipv4_network` / `ipv4_netmask` for static pools. Names must match `^[a-z_][a-z0-9_-]{0,31}$`. |
+| `ocserv_users` | List of users; optional `password` (vault recommended), optional `ipv4_address` for static address assignment. Names must match `^[a-z_][a-z0-9_-]{0,31}$`. |
 | `ocserv_ca_cert_file` | Path on the **controller** to a CA certificate to install on the server (optional). Leave empty to skip. Installed with mode `0600` (root only); the main `ocserv` process runs as root under systemd. |
 | `ocserv_config` | Main configuration mapping rendered into `ocserv.conf` (listen ports, TLS paths, routes, DNS, etc.). See `defaults/main.yml`. |
 | `ocserv_build_src_dir` | Directory used for downloads and source extraction when building from GitLab releases (default `/usr/local/src/ocserv`). |
@@ -56,8 +56,7 @@ The role ships with stricter defaults than a minimal AnyConnect-compatible demo:
         ocserv_users:
           - name: alice
             password: "{{ vault_alice_password }}"
-            ipv4_network: 10.100.200.0
-            ipv4_netmask: 255.255.255.252
+            ipv4_address: 10.100.200.2
 ```
 
 Add to `requirements.yml` (roles) when using Git:
