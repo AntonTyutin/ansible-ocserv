@@ -52,16 +52,20 @@
 - name: Validate per-user route CIDR notation
   assert:
     that:
-      - route is match('^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$')
-        or route is match('^([0-9a-fA-F:]+)/[0-9]{1,3}$')
+      - item.route is match('^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$')
+        or item.route is match('^([0-9a-fA-F:]+)/[0-9]{1,3}$')
     fail_msg: >-
-      Route {{ route }} for user {{ user.name }} must be a CIDR prefix (e.g. 192.168.50.0/24).
-  loop: "{{ ocserv_users | subelements('routes', skip_missing=True) }}"
+      Route {{ item.route }} for user {{ item.username }} must be a CIDR prefix (e.g. 192.168.50.0/24).
+  loop: "{{ _ocserv_route_checks }}"
   loop_control:
-    label: "{{ user.name }}: {{ route }}"
+    label: "{{ item.username }}: {{ item.route }}"
   vars:
-    user: "{{ item.0 }}"
-    route: "{{ item.1 }}"
+    _ocserv_route_checks: >-
+      {%- set out = [] -%}
+      {%- for row in ocserv_users | subelements('routes', skip_missing=True) -%}
+      {%- set _ = out.append({'username': row.0.name, 'route': row.1}) -%}
+      {%- endfor -%}
+      {{ out }}
 
 # Include build tasks if build is needed
 - include_tasks: build.yaml
@@ -116,11 +120,20 @@
   command:
     cmd: ocpasswd -c {{ ocserv_passwd_file }} {{ user.name }}
     stdin: "{{ user.password }}"
-  loop: "{{ ocserv_users }}"
+  loop: "{{ _ocserv_user_passwords }}"
   loop_control:
     loop_var: user
+    label: "{{ user.name }}"
+  vars:
+    _ocserv_user_passwords: >-
+      {%- set out = [] -%}
+      {%- for u in ocserv_users -%}
+      {%- if u.password is defined -%}
+      {%- set _ = out.append({'name': u.name, 'password': u.password}) -%}
+      {%- endif -%}
+      {%- endfor -%}
+      {{ out }}
   no_log: true
-  when: user.password is defined
   notify: restart ocserv
 
 - name: Ensure per-user config directory exists
@@ -138,11 +151,19 @@
     owner: root
     group: root
     mode: '0644'
-  loop: "{{ ocserv_users }}"
+  loop: "{{ _ocserv_user_static_ips }}"
   loop_control:
     loop_var: user
-  no_log: true
-  when: user.ipv4_address is defined
+    label: "{{ user.name }}"
+  vars:
+    _ocserv_user_static_ips: >-
+      {%- set out = [] -%}
+      {%- for u in ocserv_users -%}
+      {%- if u.ipv4_address is defined -%}
+      {%- set _ = out.append({'name': u.name, 'ipv4_address': u.ipv4_address}) -%}
+      {%- endif -%}
+      {%- endfor -%}
+      {{ out }}
   notify: restart ocserv
 
 - name: Ensure per-user routes directory exists
@@ -171,20 +192,38 @@
     owner: root
     group: root
     mode: '0644'
-  loop: "{{ ocserv_users }}"
+  loop: "{{ _ocserv_user_routes }}"
   loop_control:
     loop_var: user
-  when: user.routes is defined and user.routes | length > 0
+    label: "{{ user.name }}"
+  vars:
+    _ocserv_user_routes: >-
+      {%- set out = [] -%}
+      {%- for u in ocserv_users -%}
+      {%- if u.routes is defined and u.routes | length > 0 -%}
+      {%- set _ = out.append({'name': u.name, 'routes': u.routes}) -%}
+      {%- endif -%}
+      {%- endfor -%}
+      {{ out }}
   notify: restart ocserv
 
 - name: Remove per-user routes file when unset
   file:
-    path: "{{ ocserv_user_routes_dir }}/{{ user.name }}"
+    path: "{{ ocserv_user_routes_dir }}/{{ username }}"
     state: absent
-  loop: "{{ ocserv_users }}"
+  loop: "{{ _ocserv_users_without_routes }}"
   loop_control:
-    loop_var: user
-  when: user.routes is not defined or user.routes | length == 0
+    label: "{{ username }}"
+  vars:
+    username: "{{ item }}"
+    _ocserv_users_without_routes: >-
+      {%- set out = [] -%}
+      {%- for u in ocserv_users -%}
+      {%- if u.routes is not defined or u.routes | length == 0 -%}
+      {%- set _ = out.append(u.name) -%}
+      {%- endif -%}
+      {%- endfor -%}
+      {{ out }}
 
 - name: Ensure kernel ip forwarding is enabled
   sysctl:
