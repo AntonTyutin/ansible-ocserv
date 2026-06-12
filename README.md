@@ -1,17 +1,11 @@
 # Ansible role: ocserv
 
-Installs [ocserv](https://gitlab.com/openconnect/ocserv) (OpenConnect VPN server): discovers the latest release from GitLab, compiles on target when needed, configures `systemd`, applies TLS and network settings, manages optional per-user static IPv4 pools and per-user system routes (via connect/disconnect hook), and adds a UFW route rule allowing forwarding from the VPN address pool to the WAN interface.
+Installs [ocserv](https://gitlab.com/openconnect/ocserv) (OpenConnect VPN server): discovers the latest release from GitLab, compiles on target when needed, configures `systemd`, applies TLS and network settings, manages optional per-user static IPv4 pools and per-user system routes (via connect/disconnect hook), and adds UFW `before.rules` iptables forward rules for `ocserv_config.device`+ tunnel interfaces (e.g. `vpns+`).
 
 ## Requirements
 
 - **Target OS:** Ubuntu — see **Ubuntu-specific parts** below for APT/UFW assumptions.
 - **Ansible:** 2.12+
-- **Collections:** `community.general` (for `ufw`), `ansible.utils` (for VPN pool CIDR). Install before running playbooks:
-
-```bash
-ansible-galaxy collection install -r requirements.yml
-```
-
 - **Network:** control node must reach `https://gitlab.com` to resolve the latest ocserv release and download sources.
 
 ### Ubuntu-specific parts
@@ -22,8 +16,8 @@ The role is written with **Ubuntu Server/Desktop** in mind. Elsewhere (Debian, R
 |------|---------------------|
 | **Galaxy metadata** | `meta/main.yml` lists Ubuntu releases (`jammy`, `noble`) as supported platforms. |
 | **Building ocserv** | `tasks/build.yaml` uses **`apt`** and **`apt_repository`**, pulls packages by Ubuntu naming, and adds the **`plucky`** `universe` line plus APT pinning so **`libllhttp-dev`** can be installed on releases where it is not in the default repos. Paths and pinning are tied to Ubuntu archive layout (`archive.ubuntu.com`). |
-| **Firewall** | A single **UFW `route`** rule allows forwarding from the VPN pool (`ocserv_ipv4_pool_cidr`, derived from `ocserv_config.ipv4_network` / `ipv4_netmask`) out via **`external_interface_ipv4`**. Matches the common Ubuntu **`ufw`** setup; hosts using **nftables**, **firewalld**, **iptables-only**, or cloud SGs must replicate equivalent rules outside this role. |
-| **`external_interface_ipv4`** | Outbound interface for the UFW route rule; defaults to `ansible_default_ipv4.interface` or `eth0`. |
+| **Firewall** | Inserts iptables rules into **`/etc/ufw/before.rules`** (`ufw-before-forward` chain): allow `device`+ → **`external_interface_ipv4`**, return traffic `RELATED,ESTABLISHED`, and `device`+ ↔ `device`+ (`device` defaults to `vpns`). Hosts without **UFW** must replicate equivalent **FORWARD** rules outside this role. |
+| **`external_interface_ipv4`** | WAN interface in the UFW forward rules; defaults to `ansible_default_ipv4.interface` or `eth0`. |
 
 Everything else (upstream tarball, **`systemd`** unit, **`ocserv.conf`** template, sysctl **`net.ipv4.ip_forward`**) is broadly **Linux**-oriented, not Ubuntu-exclusive.
 
@@ -31,7 +25,7 @@ Everything else (upstream tarball, **`systemd`** unit, **`ocserv.conf`** templat
 
 | Variable | Description |
 |----------|-------------|
-| `external_interface_ipv4` | Interface name for outbound traffic (UFW `route` rules). Defaults to `ansible_default_ipv4.interface` or `eth0`. |
+| `external_interface_ipv4` | WAN interface for UFW forward rules (`ocserv_config.device`+ ↔ external). Defaults to `ansible_default_ipv4.interface` or `eth0`. |
 | `ocserv_users` | List of users; optional `password` (vault recommended), optional `ipv4_address` for static address assignment, optional `routes` (list of CIDR prefixes) for per-user system routes added on VPN connect and removed on disconnect. Names must match `^[a-z_][a-z0-9_-]{0,31}$`. |
 | `ocserv_user_routes_dir` | Directory for per-user route files consumed by the connect/disconnect hook (default `/etc/ocserv/user-routes/`). |
 | `ocserv_connect_script` | Path to the connect/disconnect hook script (default `/usr/libexec/ocserv-user-routes-hook.sh`). Enabled in `ocserv.conf` only when at least one user has `routes`. |

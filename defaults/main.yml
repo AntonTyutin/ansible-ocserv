@@ -1,8 +1,7 @@
 ---
-# WAN-facing interface name for UFW route rules (VPN pool -> external).
+# WAN-facing interface name for UFW forward rules (ocserv tun device+ -> external).
 # Override in inventory if auto-detection is wrong.
 external_interface_ipv4: "{{ ansible_default_ipv4.interface | default('eth0') }}"
-ocserv_ipv4_pool_cidr: "{{ ocserv_config.ipv4_network | ansible.utils.ipaddr(ocserv_config.ipv4_netmask) | ansible.utils.ipaddr('network/prefix') }}"
 
 ocserv_build_src_dir: /usr/local/src/ocserv
 

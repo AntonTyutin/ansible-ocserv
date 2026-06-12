@@ -192,12 +192,18 @@
     value: 1
     state: present
 
-- name: Allow UFW forwarding from VPN pool to WAN
-  community.general.ufw:
-    rule: allow
-    route: yes
-    src: "{{ ocserv_ipv4_pool_cidr }}"
-    interface_out: "{{ external_interface_ipv4 }}"
+- name: Add ocserv forward rules to UFW before.rules
+  blockinfile:
+    path: /etc/ufw/before.rules
+    marker: "# {mark} ANSIBLE MANAGED OCSERV VPN FORWARD"
+    block: |
+      # ocserv: {{ ocserv_config.device }}+ <-> {{ external_interface_ipv4 }}
+      -A ufw-before-forward -i {{ ocserv_config.device }}+ -o {{ external_interface_ipv4 }} -j ACCEPT
+      -A ufw-before-forward -i {{ external_interface_ipv4 }} -o {{ ocserv_config.device }}+ -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+      # ocserv: {{ ocserv_config.device }}+ <-> {{ ocserv_config.device }}+
+      -A ufw-before-forward -i {{ ocserv_config.device }}+ -o {{ ocserv_config.device }}+ -j ACCEPT
+    insertbefore: "^# don't delete the 'COMMIT' line"
+  notify: reload ufw
 
 - name: Enable ocserv service
   systemd:
