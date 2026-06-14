@@ -21,6 +21,10 @@ ocserv_user_routes_dir: /etc/ocserv/user-routes/
 ocserv_connect_script: /usr/libexec/ocserv-user-routes-hook.sh
 ocserv_has_user_routes: "{{ ocserv_users | selectattr('routes', 'defined') | selectattr('routes') | list | length > 0 }}"
 ocserv_default_domain: vpn.example.com
+# DNS servers advertised to VPN clients (rendered as `dns = ...` lines in ocserv.conf).
+ocserv_dns:
+  - 8.8.8.8
+  - 1.1.1.1
 # Path on the Ansible controller to a CA certificate file to install for client cert auth (optional).
 ocserv_ca_cert_file: ""
 # Optional secondary methods (e.g. certificate). Leave empty unless you install `ocserv_ca_cert_file` and need client certs.
@@ -85,9 +89,7 @@ ocserv_config:
   ping_leases: false
 
   # DNS servers
-  dns:
-    - 8.8.8.8
-    - 1.1.1.1
+  dns: "{{ ocserv_dns }}"
 
   # Routes
   route: [] # use as default route

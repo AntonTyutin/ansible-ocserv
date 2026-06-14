@@ -30,6 +30,7 @@ Everything else (upstream tarball, **`systemd`** unit, **`ocserv.conf`** templat
 | `ocserv_user_routes_dir` | Directory for per-user route files consumed by the connect/disconnect hook (default `/etc/ocserv/user-routes/`). |
 | `ocserv_connect_script` | Path to the connect/disconnect hook script (default `/usr/libexec/ocserv-user-routes-hook.sh`). Enabled in `ocserv.conf` only when at least one user has `routes`. |
 | `ocserv_ca_cert_file` | Path on the **controller** to a CA certificate to install on the server (optional). Leave empty to skip. Installed with mode `0600` (root only); the main `ocserv` process runs as root under systemd. |
+| `ocserv_dns` | List of DNS servers advertised to VPN clients (default `8.8.8.8`, `1.1.1.1`). |
 | `ocserv_config` | Main configuration mapping rendered into `ocserv.conf` (listen ports, TLS paths, routes, DNS, etc.). See `defaults/main.yml`. |
 | `ocserv_build_src_dir` | Directory used for downloads and source extraction when building from GitLab releases (default `/usr/local/src/ocserv`). |
 
