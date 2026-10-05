@@ -67,6 +67,16 @@
       {%- endfor -%}
       {{ out }}
 
+- name: Validate camouflage settings
+  assert:
+    that:
+      - ocserv_config.camouflage_secret is match('^[A-Za-z0-9._~-]+$')
+      - '"\"" not in (ocserv_config.camouflage_realm | default("", true))'
+    fail_msg: >-
+      With camouflage enabled, ocserv_camouflage_secret must be non-empty and contain only
+      URL-safe characters (A-Z a-z 0-9 . _ ~ -), and ocserv_camouflage_realm must not contain double quotes.
+  when: ocserv_config.camouflage | bool
+
 # Include build tasks if build is needed
 - include_tasks: build.yaml
   when: ocserv_build_needed
@@ -112,7 +122,8 @@
   template:
     src: ocserv.conf.j2
     dest: "{{ ocserv_config.config_file }}"
-    mode: '0644'
+    mode: '0600'
+  no_log: true
   notify: restart ocserv
 
 - name: Configure users list

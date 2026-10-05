@@ -25,6 +25,12 @@ ocserv_default_domain: vpn.example.com
 ocserv_dns:
   - 8.8.8.8
   - 1.1.1.1
+# Camouflage: hide the VPN behind an HTTP error for clients without the secret.
+# Clients connect as https://<host>/?<secret>. Store the secret in vault.
+ocserv_camouflage: false
+ocserv_camouflage_secret: ""
+# Non-empty realm -> 401 with a Basic auth prompt; empty -> plain 404.
+ocserv_camouflage_realm: "Admin Panel"
 # Path on the Ansible controller to a CA certificate file to install for client cert auth (optional).
 ocserv_ca_cert_file: ""
 # Optional secondary methods (e.g. certificate). Leave empty unless you install `ocserv_ca_cert_file` and need client certs.
@@ -108,6 +114,11 @@ ocserv_config:
   # Stricter defaults; set true only if you must support legacy AnyConnect / old OpenConnect clients.
   cisco_client_compat: false
   dtls_legacy: false
+
+  # Camouflage
+  camouflage: "{{ ocserv_camouflage }}"
+  camouflage_secret: "{{ ocserv_camouflage_secret }}"
+  camouflage_realm: "{{ ocserv_camouflage_realm }}"
 
   # Other settings
   use_occtl: true

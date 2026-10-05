@@ -31,6 +31,9 @@ Everything else (upstream tarball, **`systemd`** unit, **`ocserv.conf`** templat
 | `ocserv_connect_script` | Path to the connect/disconnect hook script (default `/usr/libexec/ocserv-user-routes-hook.sh`). Enabled in `ocserv.conf` only when at least one user has `routes`. |
 | `ocserv_ca_cert_file` | Path on the **controller** to a CA certificate to install on the server (optional). Leave empty to skip. Installed with mode `0600` (root only); the main `ocserv` process runs as root under systemd. |
 | `ocserv_dns` | List of DNS servers advertised to VPN clients (default `8.8.8.8`, `1.1.1.1`). |
+| `ocserv_camouflage` | Enable camouflage mode (default `false`). See [Camouflage](#camouflage). |
+| `ocserv_camouflage_secret` | Secret clients append to the server URL (`https://<host>/?<secret>`). Required when camouflage is on; URL-safe characters only. Store it in vault. |
+| `ocserv_camouflage_realm` | Basic auth realm shown to clients without the secret (default `Admin Panel`, response `401`). Empty string returns `404` instead. |
 | `ocserv_config` | Main configuration mapping rendered into `ocserv.conf` (listen ports, TLS paths, routes, DNS, etc.). See `defaults/main.yml`. |
 | `ocserv_build_src_dir` | Directory used for downloads and source extraction when building from GitLab releases (default `/usr/local/src/ocserv`). |
 
@@ -49,6 +52,14 @@ ip route add <CIDR> via <IP_REMOTE> dev <DEVICE>
 ```
 
 On disconnect (`REASON=disconnect`), the same routes are removed. If no user has `routes`, the hook script and connect/disconnect directives are not deployed.
+
+### Camouflage
+
+With `ocserv_camouflage: true`, ocserv answers every HTTP request that lacks the secret with an error, so the host looks like a protected web server. VPN clients must use `https://<host>/?<secret>` as the server address.
+
+The response body is built into ocserv and cannot be customized; only the status changes: `401 Unauthorized` with `WWW-Authenticate: Basic realm="<realm>"` when `ocserv_camouflage_realm` is set, `404 Not Found` otherwise.
+
+Because `ocserv.conf` then holds the secret, the role writes it with mode `0600` and hides the template task output.
 
 ## Example
 
